@@ -3,5 +3,3 @@ venv
 .idea
 __pycache__
 *.db
-migrations
-instance
