@@ -1,21 +1,21 @@
 from sqlalchemy import Column, Integer, String
-from main import db
+from app import my_db
 
 
-class Quote(db.Model):
+class Quote(my_db.Model):
     __tablename__ = 'quotes'
 
     qid = Column(Integer, primary_key=True)
-    movie_type = Column(String, required=True)
-    movie_id = Column(Integer, required=True)
-    cast_id = Column(String, required=True)
-    quote = Column(String(600), required=True)
+    movie_type = Column(String, nullable=False)
+    movie_id = Column(Integer, nullable=False)
+    cast_id = Column(String, nullable=False)
+    quote = Column(String(600), nullable=False)
 
     def __repr__(self):
         return f'Quote({self.qid}, {self.movie_type}, {self.movie_id}, {self.cast_id}, {self.quote})'
 
     @classmethod
     def save(cls, data):
-        db.session.add(data)
-        db.session.commit()
+        my_db.session.add(data)
+        my_db.session.commit()
         return 'data created'

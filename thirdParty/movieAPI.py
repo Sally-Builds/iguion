@@ -91,6 +91,8 @@ class MovieAPI:
         url = f"https://api.themoviedb.org/3/tv/{movie_id}/images"
 
         response = requests.get(url, headers=self.headers)
-
+        print(response.json())
         if response.status_code == 200:
-            return {'images': [image['file-path'] for image in response.json()['backdrops']]}
+            return {'images': [self.__image_path__(image['file_path']) for image in response.json()['backdrops'][:10]]}
+
+        return {'images': []}
