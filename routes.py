@@ -2,6 +2,7 @@ from flask import jsonify, request
 
 from thirdParty.movieAPI import MovieAPI
 from models.quotes import Quote
+from validations.create_quote import  CreateQuoteSchema
 
 
 def app_routes(app, db):
@@ -26,11 +27,18 @@ def app_routes(app, db):
     @app.route('/quotes', methods=['POST'])
     def create_quote():
         data = request.json
-        data = Quote(movie_id=data['movie_id'], cast_id=data['cast_id'], movie_type=data['movie_type'],
-                     quote=data['quote'])
+        validated_data = CreateQuoteSchema().load(data)
+        data = Quote(movie_id=validated_data['movie_id'], cast_id=validated_data['cast_id'], movie_type=validated_data['movie_type'],
+                     quote=validated_data['quote'])
         print(data)
         Quote.save(data)
-        return 'quote created'
+        return {
+            "id": data.qid,
+            "movie_type": data.movie_type,
+            "movie_id": data.movie_id,
+            "cast_id": data.cast_id,
+            "quote": data.quote
+        }
 
     @app.route('/quotes', methods=['GET'])
     def get_quotes():
