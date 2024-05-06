@@ -2,7 +2,8 @@ from flask import jsonify, request
 
 from thirdParty.movieAPI import MovieAPI
 from models.quotes import Quote
-from validations.create_quote import  CreateQuoteSchema
+from validations.create_quote import CreateQuoteSchema
+from marshmallow import ValidationError
 
 
 def app_routes(app, db):
@@ -10,8 +11,6 @@ def app_routes(app, db):
     def index():
         keyword = request.args.get('keyword')
         movie_type = request.args.get('movie_type')
-        print(keyword, movie_type)
-        # data = MovieAPI().search('tv', 'Breaking Bad')
         data = MovieAPI().search(movie_type, keyword)
         return data
 
@@ -26,24 +25,40 @@ def app_routes(app, db):
 
     @app.route('/quotes', methods=['POST'])
     def create_quote():
-        data = request.json
-        validated_data = CreateQuoteSchema().load(data)
-        data = Quote(movie_id=validated_data['movie_id'], cast_id=validated_data['cast_id'], movie_type=validated_data['movie_type'],
-                     quote=validated_data['quote'])
-        print(data)
-        Quote.save(data)
-        return {
-            "id": data.qid,
-            "movie_type": data.movie_type,
-            "movie_id": data.movie_id,
-            "cast_id": data.cast_id,
-            "quote": data.quote
-        }
+        try:
+            validated_data = CreateQuoteSchema().load(request.json)
+
+            movie_name = MovieAPI().get_movie(validated_data['movie_type'], validated_data['movie_id'])['movie_name']
+
+            if not movie_name:
+                return {"error": {'movie_id': "no movie found with this id"}}, 400
+
+            cast_id = MovieAPI().cast_exist_for_movie(validated_data['movie_type'], validated_data['movie_id'],
+                                                      validated_data['cast_id'])
+
+            if not cast_id:
+                return {"error": {'cast_id': "no cast found with this id for this movie"}}, 400
+
+            quote = Quote(movie_id=validated_data['movie_id'], cast_id=validated_data['cast_id'],
+                          movie_type=validated_data['movie_type'],
+                          quote=validated_data['quote'])
+            Quote.save(quote)
+            return {
+                "id": quote.qid,
+                "movie_type": quote.movie_type,
+                "movie_name": MovieAPI().get_movie(quote.movie_type, quote.movie_id)['movie_name'],
+                "cast_name": MovieAPI().get_cast(quote.cast_id)['cast_name'],
+                "quote": quote.quote
+            }
+        except ValidationError as err:
+            return jsonify({"error": err.messages}), 400
 
     @app.route('/quotes', methods=['GET'])
     def get_quotes():
         quotes = Quote.query.all()
-        data = [{'movie_name': MovieAPI().get_movie(quote.movie_type, quote.movie_id)['movie_name'],
+        data = [{
+            'id': quote.qid,
+            'movie_name': MovieAPI().get_movie(quote.movie_type, quote.movie_id)['movie_name'],
                  'movie_type': quote.movie_type,
                  'cast_name': MovieAPI().get_cast(quote.cast_id)['cast_name'],
                  'images': MovieAPI().movie_images(quote.movie_type, quote.movie_id)['images'],

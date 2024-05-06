@@ -57,13 +57,12 @@ class MovieAPI:
 
         return False
 
-    def cast_exist(self, cast_id):
-        url = f"https://api.themoviedb.org/3/credit/{cast_id}"
+    def cast_exist_for_movie(self, movie_type, movie_id, cast_id):
+        casts = self.get_casts(movie_type, movie_id)['casts']
 
-        response = requests.get(url, headers=self.headers)
-
-        if response.status_code == 200:
-            return True
+        for cast in casts:
+            if cast['cast_id'] == cast_id:
+                return True
 
         return False
 
