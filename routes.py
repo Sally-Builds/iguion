@@ -7,8 +7,13 @@ from marshmallow import ValidationError
 
 
 def app_routes(app, db):
-    @app.route('/search')
+
+    @app.route('/')
     def index():
+        return '<h3> Welcome to iGuion. </h3>'
+
+    @app.route('/search')
+    def search():
         keyword = request.args.get('keyword')
         movie_type = request.args.get('movie_type')
         data = MovieAPI().search(movie_type, keyword)
@@ -27,6 +32,7 @@ def app_routes(app, db):
     def create_quote():
         try:
             validated_data = CreateQuoteSchema().load(request.json)
+            print(validated_data)
 
             movie_name = MovieAPI().get_movie(validated_data['movie_type'], validated_data['movie_id'])['movie_name']
 
@@ -63,7 +69,7 @@ def app_routes(app, db):
                  'cast_name': MovieAPI().get_cast(quote.cast_id)['cast_name'],
                  'images': MovieAPI().movie_images(quote.movie_type, quote.movie_id)['images'],
                  'quote': quote.quote} for quote in quotes]
-        return data, 200
+        return {'quotes': data}, 200
 
     @app.route('/casts')
     def get_casts():
